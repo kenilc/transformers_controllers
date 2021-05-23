@@ -6,12 +6,12 @@ from transformers import StoppingCriteria
 
 class SuffixCriteria(StoppingCriteria):
     '''
-    This class can be used to stop generation whenever one of the suffix sequences
-    matches the suffix of the generated tokens.
+    This class can be used to stop the text generation whenever the
+    suffix of the generated tokens matches one of the given suffixes.
 
     Args:
         suffixes_ids: list[list[int]]
-            List of suffix sequence tokens in the vocabulary
+            List of sequence of tokens in the vocabulary
     '''
 
     def __init__(self, suffixes_ids: List[List[int]]):
