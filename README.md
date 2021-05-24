@@ -25,7 +25,12 @@ Helpers are subclasses of
 ```python
 import torch
 
-from transformers import AutoTokenizer, AutoModelForCausalLM, LogitsProcessorList, StoppingCriteriaList
+from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    LogitsProcessorList,
+    StoppingCriteriaList
+)
 from transformers_controllers import SuffixCriteria, GoodPhrasesLogitsProcessor
 
 tokenizer = AutoTokenizer.from_pretrained('gpt2')
