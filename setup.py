@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='transfomers_controllers',
-    version='0.0.2',
+    version='0.0.3',
     author='Kenil Cheng',
     author_email='<kenilc@gmail.com>',
     description='Helpers to control the text generation output by Hugging Face Transformers',
