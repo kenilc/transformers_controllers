@@ -12,11 +12,13 @@ pip install transformers-controllers
 
 ## Helpers
 
-Helpers are subclasses of 
+Helpers are subclasses of
 [LogitsProcessor, LogitsWarper](https://huggingface.co/transformers/_modules/transformers/generation_logits_process.html) or
 [StoppingCriteria](https://huggingface.co/transformers/_modules/transformers/generation_stopping_criteria.html).
 
 `GoodPhrasesLogitsProcessor` specifies which words or phrases can be appeared in the generated text.
+
+`ConstantLogitsWarper` makes some words more or less likely to appear in the generated text.
 
 `SuffixCriteria` stops the generation when the end of the text matches one of the given suffixes.
 
@@ -31,28 +33,46 @@ from transformers import (
     LogitsProcessorList,
     StoppingCriteriaList
 )
-from transformers_controllers import SuffixCriteria, GoodPhrasesLogitsProcessor
+from transformers_controllers import (
+    SuffixCriteria,
+    GoodPhrasesLogitsProcessor,
+    ConstantLogitsWarper,
+)
 
 tokenizer = AutoTokenizer.from_pretrained('gpt2')
 model = AutoModelForCausalLM.from_pretrained('gpt2')
 
-seed = 256
+def generate(
+    prompt,
+    stopping_criteria=None,
+    logits_processor=None,
+    logits_warper=None,
+    max_length=30,
+    seed=256
+):
+    input_ids = tokenizer.encode(prompt, return_tensors='pt')
+
+    torch.manual_seed(seed)
+    with torch.no_grad():
+        output = model.sample(
+            input_ids,
+            logits_processor=logits_processor,
+            logits_warper=logits_warper,
+            stopping_criteria=stopping_criteria,
+            pad_token_id=tokenizer.eos_token_id,
+            max_length=max_length
+        )
+
+    text = tokenizer.decode(output[0], skip_special_tokens=True)
+    print(text)
 
 prompt = 'This morning, when I was walking in the park, I looked up and'
-input_ids = tokenizer.encode(prompt, return_tensors='pt')
 
 print('--- The writing prompt ---\n')
 print(prompt)
 
-torch.manual_seed(seed)
-output = model.sample(
-    input_ids,
-    pad_token_id=tokenizer.eos_token_id,
-    max_length=50
-)
-
-print('--- Without any control ---\n')
-print(tokenizer.decode(output[0], skip_special_tokens=True))
+print('\n--- Without any control ---\n')
+generate(prompt)
 
 # Stop the generation if it hits either of these punctuations.
 stopping_criteria = StoppingCriteriaList([
@@ -61,37 +81,33 @@ stopping_criteria = StoppingCriteriaList([
     ])
 ])
 
-torch.manual_seed(seed)
-output = model.sample(
-    input_ids,
-    stopping_criteria=stopping_criteria,
-    pad_token_id=tokenizer.eos_token_id,
-    max_length=50
-)
-
 print('\n--- Stop at the end of the first sentence ---\n')
-print(tokenizer.decode(output[0], skip_special_tokens=True))
+generate(prompt, stopping_criteria)
 
-# Use only these words in the generated output:
+# Only use these words in the generated output:
 logits_processor = LogitsProcessorList([
     GoodPhrasesLogitsProcessor([
         tokenizer.encode(phrase) for phrase in [
-            '!', ',', '.', ' saw', ' morning', ' bird', ' I', ' a', ' the', ' in',
+            '!', ',', '.', ' saw', ' morning', ' bird',
+            ' lion', ' I', ' a', ' the', ' in', 'me'
         ]
-    ], num_beams=1)
+    ])
 ])
 
-torch.manual_seed(seed)
-output = model.sample(
-    input_ids,
-    logits_processor=logits_processor,
-    stopping_criteria=stopping_criteria,
-    pad_token_id=tokenizer.eos_token_id,
-    max_length=50
-)
+print('\n--- Restrict the choice of words ---\n')
+generate(prompt, stopping_criteria, logits_processor)
 
-print('\n--- Finish a sentence with a given list of words ---\n')
-print(tokenizer.decode(output[0], skip_special_tokens=True))
+# Give more weights to some words.
+deltas = torch.zeros(tokenizer.vocab_size)
+deltas[tokenizer.encode(' lion')] = 2.5
+deltas[tokenizer.encode('.')] = 2.5
+
+logits_warper = LogitsProcessorList([
+    ConstantLogitsWarper(deltas)
+])
+
+print('\n--- Prefer lions than birds ---\n')
+generate(prompt, stopping_criteria, logits_processor, logits_warper)
 ```
 
 And this is the output:
@@ -102,15 +118,19 @@ This morning, when I was walking in the park, I looked up and
 
 --- Without any control ---
 
-This morning, when I was walking in the park, I looked up and saw a Rita Skeeter painting. I was wearing my suit that day in a round-autumn shower. The one we had planned for him was a tailored suit with pink
+This morning, when I was walking in the park, I looked up and saw a Rita Skeeter painting. I was wearing my suit that day in
 
 --- Stop at the end of the first sentence ---
 
 This morning, when I was walking in the park, I looked up and saw a Rita Skeeter painting.
 
---- Finish a sentence with a given list of words ---
+--- Restrict the choice of words ---
 
 This morning, when I was walking in the park, I looked up and saw a bird, I saw the bird.
+
+--- Prefer lions than birds ---
+
+This morning, when I was walking in the park, I looked up and saw a lion.
 ```
 
 ## References
