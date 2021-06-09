@@ -4,6 +4,7 @@ from pygtrie import Trie
 import torch
 from transformers import StoppingCriteria
 
+
 class SuffixCriteria(StoppingCriteria):
     '''
     This class can be used to stop the text generation whenever the
