@@ -84,7 +84,7 @@ stopping_criteria = StoppingCriteriaList([
 print('\n--- Stop at the end of the first sentence ---\n')
 generate(prompt, stopping_criteria)
 
-# Only use these words in the generated output:
+# Only use these words in the generated output.
 logits_processor = LogitsProcessorList([
     GoodPhrasesLogitsProcessor([
         tokenizer.encode(phrase) for phrase in [
@@ -118,19 +118,23 @@ This morning, when I was walking in the park, I looked up and
 
 --- Without any control ---
 
-This morning, when I was walking in the park, I looked up and saw a Rita Skeeter painting. I was wearing my suit that day in
+This morning, when I was walking in the park, I looked up and
+saw a Rita Skeeter painting. I was wearing my suit that day in
 
 --- Stop at the end of the first sentence ---
 
-This morning, when I was walking in the park, I looked up and saw a Rita Skeeter painting.
+This morning, when I was walking in the park, I looked up and
+saw a Rita Skeeter painting.
 
 --- Restrict the choice of words ---
 
-This morning, when I was walking in the park, I looked up and saw a bird, I saw the bird.
+This morning, when I was walking in the park, I looked up and
+saw a bird, I saw the bird.
 
 --- Prefer lions than birds ---
 
-This morning, when I was walking in the park, I looked up and saw a lion.
+This morning, when I was walking in the park, I looked up and
+saw a lion.
 ```
 
 ## References
